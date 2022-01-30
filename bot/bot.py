@@ -13,6 +13,10 @@ bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher(bot)
 dp.middleware.setup(LoggingMiddleware())
 
+#COMMANDS
+@dp.message_handler(commands=['start'])
+async def commands_start(message: types.Message):
+    await message.reply('Привет! Я умею изменять стиль картинки.\nВведите /help, чтобы узнать возможные команды')
 
 @dp.message_handler()
 async def echo(message: types.Message):
@@ -23,7 +27,6 @@ async def echo(message: types.Message):
 async def on_startup(dp):
     logging.warning(
         'Starting connection. ')
-    print('Bot is online')
     await bot.set_webhook(WEBHOOK_URL,drop_pending_updates=True)
 
 
