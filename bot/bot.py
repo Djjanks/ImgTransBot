@@ -1,8 +1,9 @@
 import logging
 
+from PIL import Image
 from aiogram import Bot, types
 from aiogram.contrib.middlewares.logging import LoggingMiddleware
-from aiogram.dispatcher import Dispatcher
+from aiogram.dispatcher import Dispatcher, FSMContext
 from aiogram.utils.executor import start_webhook
 from bot.settings import (BOT_TOKEN, HEROKU_APP_NAME,
                           WEBHOOK_URL, WEBHOOK_PATH,
@@ -22,6 +23,7 @@ async def echo(message: types.Message):
 async def on_startup(dp):
     logging.warning(
         'Starting connection. ')
+    print('Bot is online')
     await bot.set_webhook(WEBHOOK_URL,drop_pending_updates=True)
 
 
