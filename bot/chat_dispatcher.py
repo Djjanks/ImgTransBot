@@ -1,5 +1,5 @@
 import asyncio
-#asdasd
+
 class ChatDispatcher:
     class Timeout(RuntimeError):
         def __init__(self, last_message):

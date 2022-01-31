@@ -18,7 +18,7 @@ dp = Dispatcher(bot)
 dp.middleware.setup(LoggingMiddleware())
 
 mode = 0
-
+print(2)
 if mode == 1:
     async def chat(get_message):
         try:
