@@ -130,4 +130,4 @@ dmypy.json
 
 .vscode
 
-.bat
+run_local.bat
