@@ -1,6 +1,6 @@
 ''' Run a function by ado <func_name> '''
 
-
+#123123
 def set_hook():
     import asyncio
     from bot.settings import HEROKU_APP_NAME, WEBHOOK_URL, BOT_TOKEN
