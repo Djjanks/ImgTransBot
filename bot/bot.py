@@ -9,17 +9,18 @@ from aiogram.contrib.middlewares.logging import LoggingMiddleware
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.dispatcher import Dispatcher, FSMContext
 from aiogram.utils.executor import start_webhook
-from bot.settings import (BOT_TOKEN, HEROKU_APP_NAME,
-                          WEBHOOK_URL, WEBHOOK_PATH,
-                          WEBAPP_HOST, WEBAPP_PORT)
+from bot.settings import (BOT_TOKEN, MODE)
+if MODE=='LOCAL':
+    from bot.settings import (BOT_TOKEN, HEROKU_APP_NAME, MODE,
+                            WEBHOOK_URL, WEBHOOK_PATH,
+                            WEBAPP_HOST, WEBAPP_PORT)
 
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher(bot)
 dp.middleware.setup(LoggingMiddleware())
 
-mode = 0
-print(2)
-if mode == 1:
+print(1111111)
+if MODE == 'HEROKU':
     async def chat(get_message):
         try:
             message = await get_message()
@@ -50,7 +51,7 @@ if mode == 1:
     @dp.message_handler()
     async def message_handle(message: types.Message):
         await chat_dispatcher.handle(message)
-else:
+elif MODE == 'LOCAL':
     #STATES
     class FSMPics(StatesGroup):
         got_first_pic = State() 
@@ -107,11 +108,12 @@ async def on_shutdown(dp):
 
 def main():
     logging.basicConfig(level=logging.INFO)
-    start_webhook(
-        dispatcher=dp,
-        webhook_path=WEBHOOK_PATH,
-        skip_updates=True,
-        on_startup=on_startup,
-        host=WEBAPP_HOST,
-        port=WEBAPP_PORT,
-    )
+    if MODE == 'HEROKU':
+        start_webhook(
+            dispatcher=dp,
+            webhook_path=WEBHOOK_PATH,
+            skip_updates=True,
+            on_startup=on_startup,
+            host=WEBAPP_HOST,
+            port=WEBAPP_PORT,
+        )
