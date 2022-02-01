@@ -10,7 +10,7 @@ from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.dispatcher import Dispatcher, FSMContext
 from aiogram.utils.executor import start_webhook
 from bot.settings import (BOT_TOKEN, MODE)
-if MODE=='LOCAL':
+if MODE=='HEROKU':
     from bot.settings import (BOT_TOKEN, HEROKU_APP_NAME, MODE,
                             WEBHOOK_URL, WEBHOOK_PATH,
                             WEBAPP_HOST, WEBAPP_PORT)

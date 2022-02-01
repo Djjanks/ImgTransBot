@@ -1,7 +1,7 @@
 import os
 
 MODE = os.getenv('MODE')
-
+print(MODE)
 BOT_TOKEN = os.getenv('BOT_TOKEN')
 
 if MODE == 'HEROKU':
