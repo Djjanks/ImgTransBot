@@ -20,7 +20,7 @@ dp = Dispatcher(bot)
 dp.middleware.setup(LoggingMiddleware())
 
 print(1111111)
-if MODE == 'HEROKU':
+if MODE == 'LOCAL':
     async def chat(get_message):
         try:
             message = await get_message()
@@ -51,7 +51,7 @@ if MODE == 'HEROKU':
     @dp.message_handler()
     async def message_handle(message: types.Message):
         await chat_dispatcher.handle(message)
-elif MODE == 'LOCAL':
+elif MODE == 'HEROKU':
     #STATES
     class FSMPics(StatesGroup):
         got_first_pic = State() 
