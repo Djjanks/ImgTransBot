@@ -27,8 +27,12 @@ bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher(bot)
 dp.middleware.setup(LoggingMiddleware())
 
-print(1111111)
+
 if MODE == "LOCAL":
+
+    #STARTUP
+    async def on_startup(_):
+        print('Bot is online')
 
     async def chat(get_message):
         try:
@@ -109,9 +113,9 @@ elif MODE == "HEROKU":
         await bot.send_message(message.chat.id, message.text)
 
 
-async def on_startup(dp):
-    logging.warning("Starting connection. ")
-    await bot.set_webhook(WEBHOOK_URL, drop_pending_updates=True)
+    async def on_startup(dp):
+        logging.warning("Starting connection. ")
+        await bot.set_webhook(WEBHOOK_URL, drop_pending_updates=True)
 
 
 async def on_shutdown(dp):
