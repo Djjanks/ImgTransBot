@@ -8,73 +8,86 @@ from aiogram import Bot, types
 from aiogram.contrib.middlewares.logging import LoggingMiddleware
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.dispatcher import Dispatcher, FSMContext
+from aiogram.utils import executor
 from aiogram.utils.executor import start_webhook
-from bot.settings import (BOT_TOKEN, MODE)
+from bot.settings import BOT_TOKEN, MODE
+
 if MODE=='HEROKU':
-    from bot.settings import (BOT_TOKEN, HEROKU_APP_NAME, MODE,
-                            WEBHOOK_URL, WEBHOOK_PATH,
-                            WEBAPP_HOST, WEBAPP_PORT)
+    from bot.settings import (
+        BOT_TOKEN,
+        HEROKU_APP_NAME,
+        MODE,
+        WEBHOOK_URL,
+        WEBHOOK_PATH,
+        WEBAPP_HOST,
+        WEBAPP_PORT,
+    )
 
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher(bot)
 dp.middleware.setup(LoggingMiddleware())
 
 print(1111111)
-if MODE == 'LOCAL':
+if MODE == "LOCAL":
+
     async def chat(get_message):
         try:
             message = await get_message()
-            await message.answer('Умею складывать числа, введите первое число')
+            await message.answer("Умею складывать числа, введите первое число")
 
             first = await get_message()
-            if not re.match('^\d+$', str(first.text)):
-                await first.answer('это не число, начните сначала: /start')
+            if not re.match("^\d+$", str(first.text)):
+                await first.answer("это не число, начните сначала: /start")
                 return
 
-            await first.answer('Введите второе число')
+            await first.answer("Введите второе число")
             second = await get_message()
 
-            if not re.match('^\d+$', str(second.text)):
-                await second.answer('это не число, начните сначала: /start')
+            if not re.match("^\d+$", str(second.text)):
+                await second.answer("это не число, начните сначала: /start")
                 return
 
             result = int(first.text) + int(second.text)
-            await second.answer('Будет %s (/start - сначала)' % result)
+            await second.answer("Будет %s (/start - сначала)" % result)
 
         except ChatDispatcher.Timeout as te:
-            await te.last_message.answer('Что-то Вы долго молчите, пойду посплю')
-            await te.last_message.answer('сначала - /start')
+            await te.last_message.answer("Что-то Вы долго молчите, пойду посплю")
+            await te.last_message.answer("сначала - /start")
 
-    chat_dispatcher = ChatDispatcher(chatcb=chat,
-                                    inactive_timeout=20)
+    chat_dispatcher = ChatDispatcher(chatcb=chat, inactive_timeout=20)
 
     @dp.message_handler()
     async def message_handle(message: types.Message):
         await chat_dispatcher.handle(message)
-elif MODE == 'HEROKU':
-    #STATES
+
+elif MODE == "HEROKU":
+    # STATES
     class FSMPics(StatesGroup):
-        got_first_pic = State() 
+        got_first_pic = State()
 
-    #COMMANDS
-    @dp.message_handler(commands=['start'])
+    # COMMANDS
+    @dp.message_handler(commands=["start"])
     async def commands_start(message: types.Message):
-        await message.reply('Привет! Я умею изменять стиль картинки.\n'
-        +'Доступны следущие каманды:\n'
-        +'/help - вывести все возможные команды\n'
-        +'/anystyle - присвоить первой картинке стиль второй')
+        await message.reply(
+            "Привет! Я умею изменять стиль картинки.\n"
+            + "Доступны следущие каманды:\n"
+            + "/help - вывести все возможные команды\n"
+            + "/anystyle - присвоить первой картинке стиль второй"
+        )
 
-    @dp.message_handler(commands=['help'])
+    @dp.message_handler(commands=["help"])
     async def commands_start(message: types.Message):
-        await message.reply('Доступны следущие каманды:\n'
-        +'/help - вывести все возможные команды\n'
-        +'/anystyle - присвоить первой картинке стиль второй')
+        await message.reply(
+            "Доступны следущие каманды:\n"
+            + "/help - вывести все возможные команды\n"
+            + "/anystyle - присвоить первой картинке стиль второй"
+        )
 
-    @dp.message_handler(commands=['anystyle'])
+    @dp.message_handler(commands=["anystyle"])
     async def commands_start(message: types.Message):
-        await message.reply('Напарвьте первую картинку, стиль которой хотите поменять')
+        await message.reply("Напарвьте первую картинку, стиль которой хотите поменять")
 
-    #PICS
+    # PICS
     # @dp.message_handler(content_types=['photo'], state=None)
     # async def messages_first_pic(message: types.Message, state: FSMContext):
     #     await message.photo[-1].download('image.jpg')
@@ -92,23 +105,22 @@ elif MODE == 'HEROKU':
 
     @dp.message_handler()
     async def echo(message: types.Message):
-        logging.warning(f'Recieved a message from {message.from_user}')
+        logging.warning(f"Recieved a message from {message.from_user}")
         await bot.send_message(message.chat.id, message.text)
 
 
 async def on_startup(dp):
-    logging.warning(
-        'Starting connection. ')
-    await bot.set_webhook(WEBHOOK_URL,drop_pending_updates=True)
+    logging.warning("Starting connection. ")
+    await bot.set_webhook(WEBHOOK_URL, drop_pending_updates=True)
 
 
 async def on_shutdown(dp):
-    logging.warning('Bye! Shutting down webhook connection')
+    logging.warning("Bye! Shutting down webhook connection")
 
 
 def main():
     logging.basicConfig(level=logging.INFO)
-    if MODE == 'HEROKU':
+    if MODE == "HEROKU":
         start_webhook(
             dispatcher=dp,
             webhook_path=WEBHOOK_PATH,
@@ -117,3 +129,21 @@ def main():
             host=WEBAPP_HOST,
             port=WEBAPP_PORT,
         )
+    elif MODE == "LOCAL":
+        executor.start_polling(dp, skip_updates=True, on_startup=on_startup)
+        # start(
+        #     dispatcher - dp,
+        #     future, *, loop=None, skip_updates=None,
+        #   on_startup=None, on_shutdown=None):
+    
+    # Execute Future.
+
+    # :param dispatcher: instance of Dispatcher
+    # :param future: future
+    # :param loop: instance of AbstractEventLoop
+    # :param skip_updates:
+    # :param on_startup:
+    # :param on_shutdown:
+    # :return:
+
+        
