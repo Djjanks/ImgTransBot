@@ -1,7 +1,10 @@
 import asyncio
 
+class ExUnknownCommand(Exception):
+    pass
+
 class ChatDispatcher:
-    class Timeout(RuntimeError):
+    class ExTimeout(RuntimeError):
         def __init__(self, last_message):
             self.last_message = last_message
             super().__init__('timeout exceeded')
@@ -42,6 +45,7 @@ class ChatDispatcher:
     def get_message(self, shard):
         async def _get_message(inactive_timeout=self.inactive_timeout):
             while True:
+                print(self.chats[shard])
                 if self.chats[shard]['messages']:
                     last_message = self.chats[shard]['messages'].pop(0)
                     self.chats[shard]['last_message'] = last_message
@@ -52,7 +56,7 @@ class ChatDispatcher:
                                            timeout=inactive_timeout)
                 except asyncio.TimeoutError:
                     self.chats[shard]['wait'].set()
-                    raise self.Timeout(self.chats[shard]['last_message'])
+                    raise self.ExTimeout(self.chats[shard]['last_message'])
 
                 if not self.chats[shard]['messages']:
                     self.chats[shard]['wait'].clear()

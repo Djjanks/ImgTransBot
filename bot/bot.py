@@ -3,7 +3,7 @@ import re
 import logging
 
 from PIL import Image
-from .chat_dispatcher import ChatDispatcher
+from .chat_dispatcher import ChatDispatcher, ExUnknownCommand
 from aiogram import Bot, types
 from aiogram.contrib.middlewares.logging import LoggingMiddleware
 from aiogram.dispatcher.filters.state import State, StatesGroup
@@ -27,7 +27,6 @@ bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher(bot)
 dp.middleware.setup(LoggingMiddleware())
 
-
 if MODE == "LOCAL":
 
     #STARTUP
@@ -37,30 +36,62 @@ if MODE == "LOCAL":
     async def chat(get_message):
         try:
             message = await get_message()
-            await message.answer("Умею складывать числа, введите первое число")
+            # print(message.text)
+            # print(message.PhotoSize)
+            if message.text in ('/help', '/start'):
+                await message.answer(
+                    "Приветствую! Я умею изменять стиль картинки.\n"
+                    + "Доступны следущие команды:\n"
+                    + "/anystyle - присвоить первому изображению стиль второго\n"
+                    + "/pretrainstyle - присвоить изображения стиль выбранного художника"
+                )
+            elif message.text == '/anystyle':
+                await message.answer(
+                    "Напарвьте первое изображение, стиль которого хотите поменять"
+                )
 
-            first = await get_message()
-            if not re.match("^\d+$", str(first.text)):
-                await first.answer("это не число, начните сначала: /start")
-                return
+            else:
+                raise ExUnknownCommand()
 
-            await first.answer("Введите второе число")
-            second = await get_message()
 
-            if not re.match("^\d+$", str(second.text)):
-                await second.answer("это не число, начните сначала: /start")
-                return
+            # first = await get_message()
+            # if not re.match("^\d+$", str(first.text)):
+            #     await first.answer("это не число, начните сначала: /start")
+            #     return
 
-            result = int(first.text) + int(second.text)
-            await second.answer("Будет %s (/start - сначала)" % result)
+            # await first.answer("Введите второе число")
+            # second = await get_message()
 
-        except ChatDispatcher.Timeout as te:
-            await te.last_message.answer("Что-то Вы долго молчите, пойду посплю")
-            await te.last_message.answer("сначала - /start")
+            # if not re.match("^\d+$", str(second.text)):
+            #     await second.answer("это не число, начните сначала: /start")
+            #     return
+
+            # result = int(first.text) + int(second.text)
+            # await second.answer("Будет %s (/start - сначала)" % result)
+
+        except ChatDispatcher.ExTimeout as tb:
+            await tb.last_message.answer(
+                    "Время ожидания команды превышено. Текущее состояние сброшено.\n"
+                    + "Доступны следущие команды:\n"
+                    + "/anystyle - присвоить первому изображению стиль второго\n"
+                    + "/pretrainstyle - присвоить изображения стиль выбранного художника"
+                )
+
+        except ExUnknownCommand:
+            await message.answer(
+                    "Команды не найдено.\n"
+                    + "Доступны следущие команды:\n"
+                    + "/anystyle - присвоить первому изображению стиль второго\n"
+                    + "/pretrainstyle - присвоить изображения стиль выбранного художника"
+                )
 
     chat_dispatcher = ChatDispatcher(chatcb=chat, inactive_timeout=20)
 
     @dp.message_handler()
+    async def message_handle(message: types.Message):
+        await chat_dispatcher.handle(message)
+
+    @dp.message_handler(content_types=['photo'], state=None)
     async def message_handle(message: types.Message):
         await chat_dispatcher.handle(message)
 

@@ -21,3 +21,5 @@ def set_hook():
 def start():
     from bot.bot import main
     main()
+
+start()
