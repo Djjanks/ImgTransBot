@@ -144,6 +144,10 @@ if MODE in ('LOCAL', 'HEROKU'):
     async def message_handle(message: types.Message):
         await chat_dispatcher.handle(message)
 
+    async def on_startup(dp):
+        logging.warning("Starting connection. ")
+        await bot.set_webhook(WEBHOOK_URL, drop_pending_updates=True)
+
 # elif MODE == "HEROKU":
 #     # STATES
 #     class FSMPics(StatesGroup):
@@ -215,17 +219,3 @@ def main():
         )
     elif MODE == "LOCAL":
         executor.start_polling(dp, skip_updates=True, on_startup=on_startup)
-        # start(
-        #     dispatcher - dp,
-        #     future, *, loop=None, skip_updates=None,
-        #   on_startup=None, on_shutdown=None):
-    
-    # Execute Future.
-
-    # :param dispatcher: instance of Dispatcher
-    # :param future: future
-    # :param loop: instance of AbstractEventLoop
-    # :param skip_updates:
-    # :param on_startup:
-    # :param on_shutdown:
-    # :return:
