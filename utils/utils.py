@@ -1,4 +1,5 @@
 import io
+from msilib.schema import Error
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -176,7 +177,7 @@ def get_input_optimizer(input_img):
     optimizer = optim.LBFGS([input_img])
     return optimizer
 
-def run_style_transfer(cnn, normalization_mean, normalization_std,
+async def run_style_transfer(cnn, normalization_mean, normalization_std,
                        content_img, style_img, input_img, num_steps=400,
                        style_weight=1000000, content_weight=1):
     """Run the style transfer."""
@@ -192,6 +193,8 @@ def run_style_transfer(cnn, normalization_mean, normalization_std,
     optimizer = get_input_optimizer(input_img)
 
     print('Optimizing..')
+
+    loop = asyncio.get_event_loop()
     run = [0]
     while run[0] <= num_steps:
 
@@ -225,9 +228,8 @@ def run_style_transfer(cnn, normalization_mean, normalization_std,
 
             return style_score + content_score
 
-        # func = await closure
-
-        optimizer.step(closure)
+        # optimizer.step(closure)
+        await loop.run_in_executor(None ,optimizer.step, closure)
 
     # a last correction...
     with torch.no_grad():
@@ -243,12 +245,12 @@ def run_style_transfer(cnn, normalization_mean, normalization_std,
 
 # save_image(output, "./out.jpg", nrow=1)
 
-def merge_img (a, b):
+async def merge_img (a, b):
     content_img = image_loader2(a)
     style_img = image_loader2(b)
     input_img = content_img.clone()
 
-    result = run_style_transfer(cnn, cnn_normalization_mean, cnn_normalization_std,
+    result = await run_style_transfer(cnn, cnn_normalization_mean, cnn_normalization_std,
                                 content_img, style_img, input_img, num_steps = 150)
     buf = io.BytesIO()
     trans1 = transforms.ToPILImage()
