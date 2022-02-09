@@ -80,7 +80,7 @@ if MODE == "LOCAL":
                 
                 # img_for_send = test_img(style_img)
                 # print(img_for_send)
-                img_for_send = merge_img(content_img, style_img)
+                img_for_send = await merge_img(content_img, style_img)
                 # save_image(img_for_send, "./out111.jpg", nrow=1)
                 
                 # await photo_message.answer_photo(style_img)
@@ -92,7 +92,7 @@ if MODE == "LOCAL":
                     "Запущен тест асинхроннсти. Процесс займет 1 минуту."
                 )
 
-                sleep(60)
+                asyncio.sleep(60)
 
                 await message.answer(
                     "Тест окончен."
@@ -229,5 +229,3 @@ def main():
     # :param on_startup:
     # :param on_shutdown:
     # :return:
-
-        
