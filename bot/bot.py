@@ -86,35 +86,9 @@ if MODE == "LOCAL":
                 # await photo_message.answer_photo(style_img)
                 await photo_message.answer('Картинка сделана')
                 await bot.send_photo(chat_id=photo_message.from_user.id,photo=img_for_send)
-            
-            elif message.text == '/testasync':
-                await message.answer(
-                    "Запущен тест асинхроннсти. Процесс займет 1 минуту."
-                )
 
-                asyncio.sleep(60)
-
-                await message.answer(
-                    "Тест окончен."
-                )
             else:
                 raise ExUnknownCommand()
-
-
-            # first = await get_message()
-            # if not re.match("^\d+$", str(first.text)):
-            #     await first.answer("это не число, начните сначала: /start")
-            #     return
-
-            # await first.answer("Введите второе число")
-            # second = await get_message()
-
-            # if not re.match("^\d+$", str(second.text)):
-            #     await second.answer("это не число, начните сначала: /start")
-            #     return
-
-            # result = int(first.text) + int(second.text)
-            # await second.answer("Будет %s (/start - сначала)" % result)
 
         except ChatDispatcher.ExTimeout as tb:
             await tb.last_message.answer(
