@@ -34,7 +34,7 @@ dp.middleware.setup(LoggingMiddleware())
 
 
 
-if MODE == "LOCAL":
+if MODE in ('LOCAL', 'HEROKU'):
 
     #STARTUP
     async def on_startup(_):
@@ -86,9 +86,35 @@ if MODE == "LOCAL":
                 # await photo_message.answer_photo(style_img)
                 await photo_message.answer('Картинка сделана')
                 await bot.send_photo(chat_id=photo_message.from_user.id,photo=img_for_send)
+            
+            elif message.text == '/testasync':
+                await message.answer(
+                    "Запущен тест асинхроннсти. Процесс займет 1 минуту."
+                )
 
+                asyncio.sleep(60)
+
+                await message.answer(
+                    "Тест окончен."
+                )
             else:
                 raise ExUnknownCommand()
+
+
+            # first = await get_message()
+            # if not re.match("^\d+$", str(first.text)):
+            #     await first.answer("это не число, начните сначала: /start")
+            #     return
+
+            # await first.answer("Введите второе число")
+            # second = await get_message()
+
+            # if not re.match("^\d+$", str(second.text)):
+            #     await second.answer("это не число, начните сначала: /start")
+            #     return
+
+            # result = int(first.text) + int(second.text)
+            # await second.answer("Будет %s (/start - сначала)" % result)
 
         except ChatDispatcher.ExTimeout as tb:
             await tb.last_message.answer(
@@ -118,58 +144,58 @@ if MODE == "LOCAL":
     async def message_handle(message: types.Message):
         await chat_dispatcher.handle(message)
 
-elif MODE == "HEROKU":
-    # STATES
-    class FSMPics(StatesGroup):
-        got_first_pic = State()
+# elif MODE == "HEROKU":
+#     # STATES
+#     class FSMPics(StatesGroup):
+#         got_first_pic = State()
 
-    # COMMANDS
-    @dp.message_handler(commands=["start"])
-    async def commands_start(message: types.Message):
-        await message.reply(
-            "Привет! Я умею изменять стиль картинки.\n"
-            + "Доступны следущие каманды:\n"
-            + "/help - вывести все возможные команды\n"
-            + "/anystyle - присвоить первой картинке стиль второй"
-        )
+#     # COMMANDS
+#     @dp.message_handler(commands=["start"])
+#     async def commands_start(message: types.Message):
+#         await message.reply(
+#             "Привет! Я умею изменять стиль картинки.\n"
+#             + "Доступны следущие каманды:\n"
+#             + "/help - вывести все возможные команды\n"
+#             + "/anystyle - присвоить первой картинке стиль второй"
+#         )
 
-    @dp.message_handler(commands=["help"])
-    async def commands_start(message: types.Message):
-        await message.reply(
-            "Доступны следущие каманды:\n"
-            + "/help - вывести все возможные команды\n"
-            + "/anystyle - присвоить первой картинке стиль второй"
-        )
+#     @dp.message_handler(commands=["help"])
+#     async def commands_start(message: types.Message):
+#         await message.reply(
+#             "Доступны следущие каманды:\n"
+#             + "/help - вывести все возможные команды\n"
+#             + "/anystyle - присвоить первой картинке стиль второй"
+#         )
 
-    @dp.message_handler(commands=["anystyle"])
-    async def commands_start(message: types.Message):
-        await message.reply("Напарвьте первую картинку, стиль которой хотите поменять")
+#     @dp.message_handler(commands=["anystyle"])
+#     async def commands_start(message: types.Message):
+#         await message.reply("Напарвьте первую картинку, стиль которой хотите поменять")
 
-    # PICS
-    # @dp.message_handler(content_types=['photo'], state=None)
-    # async def messages_first_pic(message: types.Message, state: FSMContext):
-    #     await message.photo[-1].download('image.jpg')
-    #     await message.reply('Good. Send one more pic')
-    #     await FSMPics.got_first_pic.set()
+#     # PICS
+#     # @dp.message_handler(content_types=['photo'], state=None)
+#     # async def messages_first_pic(message: types.Message, state: FSMContext):
+#     #     await message.photo[-1].download('image.jpg')
+#     #     await message.reply('Good. Send one more pic')
+#     #     await FSMPics.got_first_pic.set()
 
-    # @dp.message_handler(content_types=['photo'], state=FSMPics.got_first_pic)
-    # async def messages_second_pic(message: types.Message, state: FSMContext):
-    #     await message.photo[-1].download('mark.jpg')
-    #     await message.reply('Good. We got two pics')
-    #     merger()
-    #     result = open('C:/Users/admin/Desktop/dev/tbot003/result.jpg','rb')
-    #     await bot.send_photo(message.chat.id, result)
-    #     await state.finish()
+#     # @dp.message_handler(content_types=['photo'], state=FSMPics.got_first_pic)
+#     # async def messages_second_pic(message: types.Message, state: FSMContext):
+#     #     await message.photo[-1].download('mark.jpg')
+#     #     await message.reply('Good. We got two pics')
+#     #     merger()
+#     #     result = open('C:/Users/admin/Desktop/dev/tbot003/result.jpg','rb')
+#     #     await bot.send_photo(message.chat.id, result)
+#     #     await state.finish()
 
-    @dp.message_handler()
-    async def echo(message: types.Message):
-        logging.warning(f"Recieved a message from {message.from_user}")
-        await bot.send_message(message.chat.id, message.text)
+#     @dp.message_handler()
+#     async def echo(message: types.Message):
+#         logging.warning(f"Recieved a message from {message.from_user}")
+#         await bot.send_message(message.chat.id, message.text)
 
 
-    async def on_startup(dp):
-        logging.warning("Starting connection. ")
-        await bot.set_webhook(WEBHOOK_URL, drop_pending_updates=True)
+#     async def on_startup(dp):
+#         logging.warning("Starting connection. ")
+#         await bot.set_webhook(WEBHOOK_URL, drop_pending_updates=True)
 
 
 async def on_shutdown(dp):
