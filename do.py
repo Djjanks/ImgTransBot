@@ -22,4 +22,4 @@ def start():
     from bot.bot import main
     main()
 
-start()
+# start()
