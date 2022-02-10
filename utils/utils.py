@@ -102,8 +102,9 @@ class Normalization(nn.Module):
 
 #####################################################################################
 
-model_urls['vgg19'] = model_urls['vgg19'].replace('https://', 'http://')
-cnn = models.vgg19(pretrained=True).features.eval()
+# model_urls['vgg19'] = model_urls['vgg19'].replace('https://', 'http://')
+# cnn = models.vgg19(pretrained=True).features.eval()
+cnn = models.mobilenet_v2(pretrained=True).features.eval()
 cnn_normalization_mean = torch.tensor([0.485, 0.456, 0.406])
 cnn_normalization_std = torch.tensor([0.229, 0.224, 0.225])
 
