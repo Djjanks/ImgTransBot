@@ -206,8 +206,8 @@ if MODE in ('LOCAL', 'HEROKU'):
 #         await bot.set_webhook(WEBHOOK_URL, drop_pending_updates=True)
 
 
-async def on_shutdown(dp):
-    logging.warning("Bye! Shutting down webhook connection")
+# async def on_shutdown(dp):
+#     logging.warning("Bye! Shutting down webhook connection")
 
 
 def main():
