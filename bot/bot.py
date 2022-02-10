@@ -34,16 +34,18 @@ dp.middleware.setup(LoggingMiddleware())
 
 
 
-if MODE in ('LOCAL', 'HEROKU'):
+if MODE =='LOCAL':
 
-    #STARTUP
-    # async def on_startup(_):
-    #     print('Bot is online')
+    # STARTUP
+    async def on_startup(_):
+        print('Bot is online')
+elif MODE == 'HEROKU':
 
     async def on_startup(_):
         logging.warning("Starting connection. ")
         await bot.set_webhook(WEBHOOK_URL, drop_pending_updates=True)
 
+if 1 ==1:
     async def chat(get_message):
         try:
             message = await get_message()
