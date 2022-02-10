@@ -207,7 +207,7 @@ async def on_shutdown(dp):
 
 
 def main():
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(level=logging.ERROR)
     if MODE == "HEROKU":
         start_webhook(
             dispatcher=dp,
