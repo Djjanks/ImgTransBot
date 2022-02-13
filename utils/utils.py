@@ -9,7 +9,7 @@ from torchvision import transforms, models
 from torchvision.models.vgg import model_urls
 from models.nst import get_style_model_and_losses
 
-IMG_MAX_SIZE = 512
+IMG_MAX_SIZE = 256
 
 # desired depth layers to compute style/content losses :
 CONTENT_LAYERS_DEFAULT = ['conv_4']
