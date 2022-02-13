@@ -156,7 +156,7 @@ async def neural_style_transfer (content_img, style_img):
     model_urls['vgg19'] = model_urls['vgg19'].replace('https://', 'http://')
     cnn = models.vgg19(pretrained=True).features[:18].eval()
 
-    result = await run_style_transfer(cnn, content_img, style_img, input_img, num_steps = 200)
+    result = await run_style_transfer(cnn, content_img, style_img, input_img, num_steps = 150)
     buf = io.BytesIO()
     trans1 = transforms.ToPILImage()
     result = trans1(result[0])
