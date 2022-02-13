@@ -1,125 +1,95 @@
+import asyncio
+from datetime import datetime
 import io
-# from msilib.schema import Error
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 import torch.optim as optim
-
-import asyncio
 
 from PIL import Image
 from torchvision import transforms, models
-from torchvision.utils import save_image
 from torchvision.models.vgg import model_urls
+from models.nst import Normalization, ContentLoss, StyleLoss, VGG_NST
 
-imsize = 256  # use small size if no gpu
-
-loader = transforms.Compose([
-    transforms.Resize(imsize),  # scale imported image
-    transforms.ToTensor()])  # transform it into a torch tensor
-
-
-def image_loader(image_name):
-    image = Image.open(image_name)
-    # fake batch dimension required to fit network's input dimensions
-    image = loader(image).unsqueeze(0)
-    return image
-
-
-# style_img = image_loader("C:\\Users\\ignatovdo\\repo\\ImgTransBot\\imgs\\style1.jpg")
-# content_img = image_loader("C:\\Users\\ignatovdo\\repo\\ImgTransBot\\imgs\\content1.jpg")
-
-def image_loader2(image):
-    # image = Image.open(image_name)
-    # fake batch dimension required to fit network's input dimensions
-    image = loader(image).unsqueeze(0)
-    return image
-
-# assert style_img.size() == content_img.size(), \
-#     "we need to import style and content images of the same size"
-
-def im_convert(tensor):
-    image = tensor.clone()
-    image = image.numpy().squeeze()
-    image = image.transpose(1, 2, 0)
-    image = image * torch.tensor([0.229, 0.224, 0.225]) + torch.tensor([0.485, 0.456, 0.406])
-    image = image.clip(0, 1)
-
-    return image
-
-class ContentLoss(nn.Module):
-
-    def __init__(self, target,):
-        super(ContentLoss, self).__init__()
-        # we 'detach' the target content from the tree used
-        # to dynamically compute the gradient: this is a stated value,
-        # not a variable. Otherwise the forward method of the criterion
-        # will throw an error.
-        self.target = target.detach()
-
-    def forward(self, input):
-        self.loss = F.mse_loss(input, self.target)
-        return input
-
-def gram_matrix(input):
-    a, b, c, d = input.size()  # a=batch size(=1)
-    # b=number of feature maps
-    # (c,d)=dimensions of a f. map (N=c*d)
-
-    features = input.view(a * b, c * d)  # resise F_XL into \hat F_XL
-
-    G = torch.mm(features, features.t())  # compute the gram product
-
-    # we 'normalize' the values of the gram matrix
-    # by dividing by the number of element in each feature maps.
-    return G.div(a * b * c * d)
-
-class StyleLoss(nn.Module):
-
-    def __init__(self, target_feature):
-        super(StyleLoss, self).__init__()
-        self.target = gram_matrix(target_feature).detach()
-
-    def forward(self, input):
-        G = gram_matrix(input)
-        self.loss = F.mse_loss(G, self.target)
-        return input
-
-# create a module to normalize input image so we can easily put it in a
-# nn.Sequential
-class Normalization(nn.Module):
-    def __init__(self, mean, std):
-        super(Normalization, self).__init__()
-        # .view the mean and std to make them [C x 1 x 1] so that they can
-        # directly work with image Tensor of shape [B x C x H x W].
-        # B is batch size. C is number of channels. H is height and W is width.
-        self.mean = torch.tensor(mean).view(-1, 1, 1)
-        self.std = torch.tensor(std).view(-1, 1, 1)
-
-    def forward(self, img):
-        # normalize img
-        return (img - self.mean) / self.std
-
-#####################################################################################
-
-model_urls['vgg19'] = model_urls['vgg19'].replace('https://', 'http://')
-cnn = models.vgg19(pretrained=True).features.eval()
-# cnn = models.mobilenet_v2(pretrained=True).features.eval()
-cnn_normalization_mean = torch.tensor([0.485, 0.456, 0.406])
-cnn_normalization_std = torch.tensor([0.229, 0.224, 0.225])
+IMG_MAX_SIZE = 512
 
 # desired depth layers to compute style/content losses :
-content_layers_default = ['conv_4']
-style_layers_default = ['conv_1', 'conv_2', 'conv_3', 'conv_4', 'conv_5']
+CONTENT_LAYERS_DEFAULT = ['conv_4']
+STYLE_LAYERS_DEFAULT = ['conv_1', 'conv_2', 'conv_3', 'conv_4', 'conv_5']
 
-#####################################################################################
+# remove pixel when odd
+def resize_by_pix(img):
+    width, height = img.size
+    width = width-1 if width%2 == 1 else width
+    height = height-1 if height%2 == 1 else height
+    img = img.crop((0, 0, width, height))
+    return img, width, height
 
-def get_style_model_and_losses(cnn, normalization_mean, normalization_std,
-                               style_img, content_img,
-                               content_layers=content_layers_default,
-                               style_layers=style_layers_default):
+# Size up by mirroring (style to content size)
+def size_up(img, dif, mode):
+  half_dif = dif//2
+  width, height = img.size
+  if mode == 'W':
+    part1 = img.crop((0, 0, half_dif, height)).transpose(Image.FLIP_LEFT_RIGHT)
+    part2 = img.crop((width-half_dif, 0, width, height)).transpose(Image.FLIP_LEFT_RIGHT)
+    rez_img = Image.new(img.mode, (width + dif, height))
+    rez_img.paste(img, (half_dif, 0))
+    rez_img.paste(part1, (0,0))
+    rez_img.paste(part2, (width + half_dif,0))
+
+  elif mode == 'H':
+    part1 = img.crop((0, 0, width, half_dif)).transpose(Image.FLIP_TOP_BOTTOM)
+    part2 = img.crop((0, height-half_dif, width, height)).transpose(Image.FLIP_TOP_BOTTOM)
+    rez_img = Image.new(img.mode, (width, height + dif))
+    rez_img.paste(img, (0, half_dif))
+    rez_img.paste(part1, (0,0))
+    rez_img.paste(part2, (0, height+half_dif))
+
+  return rez_img
+
+# Size down by cutting (style to content size)
+def size_down(img, dif, mode):
+  half_dif = dif//2
+  width, height = img.size
+  if mode == 'W':
+    rez_img = img.crop((half_dif, 0, width - half_dif, height))
+  elif mode == 'H':
+    rez_img = img.crop((0, half_dif , width, height - half_dif))
+
+  return rez_img
+
+def prep_imgs(content_img, style_img):
+  
+    content_img, ci_width, ci_height = resize_by_pix(content_img)
+    style_img, si_width, si_height = resize_by_pix(style_img)
+
+    if ci_width > si_width:
+        style_img = size_up(style_img, ci_width-si_width, 'W')
+    elif ci_width < si_width:
+        style_img = size_down(style_img, si_width - ci_width, 'W')
+
+    if ci_height > si_height:
+        style_img = size_up(style_img, ci_height-si_height, 'H')
+    elif ci_height < si_height:
+        style_img = size_down(style_img, si_height-ci_height, 'H')
+
+    loader_list = [transforms.ToTensor()]
+    if ci_height > IMG_MAX_SIZE or ci_width > IMG_MAX_SIZE:
+        loader_list.insert(0, transforms.Resize(IMG_MAX_SIZE))
+    
+    loader = transforms.Compose(loader_list)
+
+    # fake batch dimension required to fit network's input dimensions
+    content_img = loader(content_img).unsqueeze(0)
+    style_img = loader(style_img).unsqueeze(0)
+
+    return content_img, style_img
+
+
+def get_style_model_and_losses(cnn, style_img, content_img,
+                               content_layers=CONTENT_LAYERS_DEFAULT,
+                               style_layers=STYLE_LAYERS_DEFAULT):
     # normalization module
-    normalization = Normalization(normalization_mean, normalization_std)
+    normalization = Normalization(torch.tensor([0.485, 0.456, 0.406]), torch.tensor([0.229, 0.224, 0.225]))
 
     # just in order to have an iterable access to or list of content/syle
     # losses
@@ -129,7 +99,6 @@ def get_style_model_and_losses(cnn, normalization_mean, normalization_std,
     # assuming that cnn is a nn.Sequential, so we make a new nn.Sequential
     # to put in modules that are supposed to be activated sequentially
     model = nn.Sequential(normalization)
-
     i = 0  # increment every time we see a conv
     for layer in cnn.children():
         if isinstance(layer, nn.Conv2d):
@@ -170,7 +139,6 @@ def get_style_model_and_losses(cnn, normalization_mean, normalization_std,
             break
 
     model = model[:(i + 1)]
-
     return model, style_losses, content_losses
 
 def get_input_optimizer(input_img):
@@ -178,13 +146,11 @@ def get_input_optimizer(input_img):
     optimizer = optim.LBFGS([input_img])
     return optimizer
 
-async def run_style_transfer(cnn, normalization_mean, normalization_std,
-                       content_img, style_img, input_img, num_steps=400,
+async def run_style_transfer(cnn, content_img, style_img, input_img, num_steps=400,
                        style_weight=1000000, content_weight=1):
     """Run the style transfer."""
     print('Building the style transfer model..')
-    model, style_losses, content_losses = get_style_model_and_losses(cnn,
-        normalization_mean, normalization_std, style_img, content_img)
+    model, style_losses, content_losses = get_style_model_and_losses(cnn, style_img, content_img)
 
     # We want to optimize the input and not the model parameters so we
     # update all the requires_grad fields accordingly
@@ -238,24 +204,36 @@ async def run_style_transfer(cnn, normalization_mean, normalization_std,
 
     return input_img
 
-
-# input_img = content_img.clone()
-
-# output = run_style_transfer(cnn, cnn_normalization_mean, cnn_normalization_std,
-#                             content_img, style_img, input_img)
-
-# save_image(output, "./out.jpg", nrow=1)
-
-async def merge_img (a, b):
-    content_img = image_loader2(a)
-    style_img = image_loader2(b)
+async def neural_style_transfer (content_img, style_img):
+    start_time = datetime.now()
+    content_img, style_img = prep_imgs(content_img, style_img)
     input_img = content_img.clone()
 
-    result = await run_style_transfer(cnn, cnn_normalization_mean, cnn_normalization_std,
-                                content_img, style_img, input_img, num_steps = 150)
+    model_urls['vgg19'] = model_urls['vgg19'].replace('https://', 'http://')
+    cnn = models.vgg19(pretrained=True).features[:29].eval()
+
+    result = await run_style_transfer(cnn, content_img, style_img, input_img, num_steps = 200)
     buf = io.BytesIO()
     trans1 = transforms.ToPILImage()
     result = trans1(result[0])
     result.save(buf, format='JPEG')
     result = buf.getvalue()
+    print(datetime.now() - start_time)
+    return result
+
+
+async def neural_style_transfer2 (content_img, style_img):
+    start_time = datetime.now()
+    content_img, style_img = prep_imgs(content_img, style_img)
+    input_img = content_img.clone()
+
+    cnn = VGG_NST.eval()
+
+    result = await run_style_transfer(cnn, content_img, style_img, input_img, num_steps = 200)
+    buf = io.BytesIO()
+    trans1 = transforms.ToPILImage()
+    result = trans1(result[0])
+    result.save(buf, format='JPEG')
+    result = buf.getvalue()
+    print(datetime.now() - start_time)
     return result
