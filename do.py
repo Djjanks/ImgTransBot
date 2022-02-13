@@ -1,5 +1,5 @@
 ''' Run a function by ado <func_name> '''
-
+from os import getenv
 
 def set_hook():
     import asyncio
@@ -23,4 +23,5 @@ def start():
     main()
 
 # For local start
-# start()
+if getenv('MODE') == 'LOCAL':
+    start()
