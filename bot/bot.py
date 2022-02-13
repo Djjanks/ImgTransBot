@@ -1,7 +1,4 @@
-import asyncio
-import re
 import logging
-from time import sleep
 import urllib.request
 
 from PIL import Image
@@ -9,8 +6,7 @@ from .chat_dispatcher import ChatDispatcher, ExUnknownCommand
 from utils.utils import neural_style_transfer
 from aiogram import Bot, types
 from aiogram.contrib.middlewares.logging import LoggingMiddleware
-from aiogram.dispatcher.filters.state import State, StatesGroup
-from aiogram.dispatcher import Dispatcher, FSMContext
+from aiogram.dispatcher import Dispatcher
 from aiogram.utils import executor
 from aiogram.utils.executor import start_webhook
 from bot.settings import BOT_TOKEN, MODE
@@ -52,10 +48,11 @@ async def chat(get_message):
                 "Приветствую! Я умею изменять стиль картинки.\n"
                 + "Доступны следущие команды:\n"
                 + "/anystyle - присвоить первому изображению стиль второго\n"
+                + "Дополнительные пункты в разработке."
             )
         elif message.text == '/anystyle':
             await message.answer(
-                "Напарвьте первое изображение, стиль которого хотите поменять"
+                "Напарвьте первое изображение, стиль которого хотите поменять. Размер может быть любым, однако, если он будет больше 512pix, то будет принудительно ужат."
             )
 
             photo_message = await get_message()
@@ -64,10 +61,10 @@ async def chat(get_message):
 
             photo_file = await bot.get_file(photo_message.photo[-1].file_id)
             content_img = Image.open(urllib.request.urlopen('https://api.telegram.org/file/bot'+BOT_TOKEN+'/'+photo_file.file_path))
-            print(content_img)
+            # print(content_img)
 
             await message.answer(
-                "Напарвьте второе изображение, стиль которого будет применены к первому изображению"
+                "Напарвьте второе изображение, стиль которого будет применены к первому изображению. Его размер будет автоматически подогнан к первой картинке отзеркаливанием."
             )
 
             photo_message = await get_message()
@@ -76,15 +73,10 @@ async def chat(get_message):
 
             photo_file = await bot.get_file(photo_message.photo[-1].file_id)
             style_img = Image.open(urllib.request.urlopen('https://api.telegram.org/file/bot'+BOT_TOKEN+'/'+photo_file.file_path))
-            # print(style_img)
-            
-            # img_for_send = test_img(style_img)
-            # print(img_for_send)
+
             img_for_send = await neural_style_transfer(content_img, style_img)
-            # save_image(img_for_send, "./out111.jpg", nrow=1)
-            
-            # await photo_message.answer_photo(style_img)
-            await photo_message.answer('Картинка сделана')
+
+            await photo_message.answer('Изображение готово!')
             await bot.send_photo(chat_id=photo_message.from_user.id,photo=img_for_send)
 
         else:
@@ -104,7 +96,7 @@ async def chat(get_message):
                 + "/anystyle - присвоить первому изображению стиль второго\n"
             )
 
-chat_dispatcher = ChatDispatcher(chatcb=chat, inactive_timeout=15*60)
+chat_dispatcher = ChatDispatcher(chatcb=chat, inactive_timeout=5*60)
 
 @dp.message_handler()
 async def message_handle(message: types.Message):

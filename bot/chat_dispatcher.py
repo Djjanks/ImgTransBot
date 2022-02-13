@@ -45,9 +45,9 @@ class ChatDispatcher:
     def get_message(self, shard):
         async def _get_message(inactive_timeout=self.inactive_timeout):
             while True:
-                print('----------------------------')
-                print(self.chats[shard]['messages'])
-                print('----------------------------')
+                # print('----------------------------')
+                # print(self.chats[shard]['messages'])
+                # print('----------------------------')
                 if self.chats[shard]['messages']:
                     last_message = self.chats[shard]['messages'].pop(0)
                     self.chats[shard]['last_message'] = last_message

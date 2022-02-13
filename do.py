@@ -22,4 +22,5 @@ def start():
     from bot.bot import main
     main()
 
+# For local start
 # start()
