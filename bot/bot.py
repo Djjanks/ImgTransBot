@@ -3,7 +3,7 @@ import urllib.request
 
 from PIL import Image
 from .chat_dispatcher import ChatDispatcher, ExUnknownCommand
-from utils.utils import neural_style_transfer, IMG_MAX_SIZE
+from utils.utils import neural_style_transfer
 from aiogram import Bot, types
 from aiogram.contrib.middlewares.logging import LoggingMiddleware
 from aiogram.dispatcher import Dispatcher
@@ -52,7 +52,7 @@ async def chat(get_message):
             )
         elif message.text == '/anystyle':
             await message.answer(
-                "Напарвьте первое изображение, стиль которого хотите поменять. Размер может быть любым, однако будет принудительно ужато до", IMG_MAX_SIZE,"pix."
+                "Напарвьте первое изображение, стиль которого хотите поменять. Размер может быть любым, однако будет принудительно ужато."
             )
 
             photo_message = await get_message()
