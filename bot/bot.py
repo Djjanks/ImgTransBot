@@ -73,18 +73,18 @@ async def chat(get_message):
             await message.answer(
                 "Началась работа над преоразованием изображения. Это может заннять около 10 минут."
             )
-            try:
-                photo_file = await bot.get_file(photo_message.photo[-1].file_id)
-                style_img = Image.open(urllib.request.urlopen('https://api.telegram.org/file/bot'+BOT_TOKEN+'/'+photo_file.file_path))
+            # try:
+            photo_file = await bot.get_file(photo_message.photo[-1].file_id)
+            style_img = Image.open(urllib.request.urlopen('https://api.telegram.org/file/bot'+BOT_TOKEN+'/'+photo_file.file_path))
 
-                img_for_send = await neural_style_transfer(content_img, style_img)
+            img_for_send = await neural_style_transfer(content_img, style_img)
 
-                await photo_message.answer('Изображение готово!')
-                await bot.send_photo(chat_id=photo_message.from_user.id,photo=img_for_send)
-            except:
-                await message.answer(
-                "Произошла какая-то ошибка. Попробуйте другие изображения."
-            )
+            await photo_message.answer('Изображение готово!')
+            await bot.send_photo(chat_id=photo_message.from_user.id,photo=img_for_send)
+            # except:
+            #     await message.answer(
+            #     "Произошла какая-то ошибка. Попробуйте другие изображения."
+            # )
 
         else:
             raise ExUnknownCommand()

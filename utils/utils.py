@@ -8,7 +8,7 @@ import torch.optim as optim
 from PIL import Image
 from torchvision import transforms, models
 from torchvision.models.vgg import model_urls
-from models.nst import get_style_model_and_losses
+from models.nst import get_style_model_and_losses, VGG19_cut
 
 IMG_MAX_SIZE = 512 if getenv('MODE') == 'LOCAL' else 256
 
@@ -154,8 +154,13 @@ async def neural_style_transfer (content_img, style_img):
     content_img, style_img = prep_imgs(content_img, style_img)
     input_img = content_img.clone()
 
-    model_urls['vgg19'] = model_urls['vgg19'].replace('https://', 'http://')
-    cnn = models.vgg19(pretrained=True).features[:18].eval()
+    # model_urls['vgg19'] = model_urls['vgg19'].replace('https://', 'http://')
+    # cnn = models.vgg19(pretrained=False).features[:19]#.eval()
+
+    # cnn = VGG19_cut()
+    # cnn.load_state_dict(torch.load('models/vgg19_11_layers.pth')).eval()
+
+    cnn = torch.load('models/vgg19_11_layers.pth')
 
     result = await run_style_transfer(cnn, content_img, style_img, input_img, num_steps = 150)
     buf = io.BytesIO()

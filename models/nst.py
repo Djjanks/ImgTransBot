@@ -118,18 +118,25 @@ def get_style_model_and_losses(cnn, style_img, content_img,
     return model, style_losses, content_losses
 
 #TEST
-class VGGNet(nn.Module):
+class VGG19_cut(nn.Module):
     def __init__(self):
         """Select conv1_1 ~ conv5_1 activation maps."""
-        super(VGGNet, self).__init__()
-        self.select = ['0', '5', '10', '19', '28'] 
+        super(VGG19_cut, self).__init__()
         self.vgg = models.vgg19(pretrained=True).features
+        self.layers = nn.Sequential(nn.Conv2d(3, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.ReLU(inplace=False),
+            nn.Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.ReLU(inplace=False),
+            nn.MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False),
+            nn.Conv2d(64, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.ReLU(inplace=False),
+            nn.Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.ReLU(inplace=False),
+            nn.MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False),
+            nn.Conv2d(128, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.ReLU(inplace=False))
         
     def forward(self, x):
         """Extract multiple convolutional feature maps."""
-        features = []
-        for name, layer in self.vgg._modules.items():
-            x = layer(x)
-            if name in self.select:
-                features.append(x)
-        return features
+        x = self.layers(x)
+        return x
