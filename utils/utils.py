@@ -10,7 +10,7 @@ from torchvision import transforms, models
 from torchvision.models.vgg import model_urls
 from models.nst import get_style_model_and_losses, VGG19_cut
 
-IMG_MAX_SIZE = 512 if getenv('MODE') == 'LOCAL' else 256
+IMG_MAX_SIZE = 512 #if getenv('MODE') == 'LOCAL' else 256
 
 # desired depth layers to compute style/content losses :
 CONTENT_LAYERS_DEFAULT = ['conv_4']
